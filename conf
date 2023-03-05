@@ -38,6 +38,7 @@ NETWORK_TO_RPC_URL["aurora"]="https://rpc.ankr.com/near"
 
 # DO NOT MODIFY LINES BELOW
 declare -A NETWORK_TO_URL
+declare -A URL_TO_NETWORK
 declare -A NETWORK_TO_KEY
 declare -A NETWORK_TO_SOL2UML
 
@@ -61,6 +62,27 @@ NETWORK_TO_URL["avalanche-fuji"]="https://api-testnet.snowtrace.io/api"
 NETWORK_TO_URL["cronos"]="https://api.cronoscan.com/api"
 NETWORK_TO_URL["moonbeam"]='https://api-moonbeam.moonscan.io/api'
 NETWORK_TO_URL["aurora"]='https://api.aurorascan.dev/api'
+
+URL_TO_NETWORK["https://etherscan.io"]="mainnet"
+URL_TO_NETWORK["https://ropsten.etherscan.io"]="ropsten"
+URL_TO_NETWORK["https://rinkeby.etherscan.io"]="rinkeby"
+URL_TO_NETWORK["https://goerli.etherscan.io"]="goerli"
+URL_TO_NETWORK["https://kovan.etherscan.io"]="kovan"
+URL_TO_NETWORK["https://bscscan.com"]="bsc"
+URL_TO_NETWORK["https://testnet.bscscan.com"]="bsc-testnet"
+URL_TO_NETWORK["https://ftmscan.com"]="fantom"
+URL_TO_NETWORK["https://testnet.ftmscan.com"]="fantom-testnet"
+URL_TO_NETWORK["https://optimistic.etherscan.io"]="optimism"
+URL_TO_NETWORK["https://kovan-optimistic.etherscan.io"]="optimism-kovan"
+URL_TO_NETWORK["https://polygonscan.com"]="polygon"
+URL_TO_NETWORK["https://testnet.polygonscan.com"]="polygon-mumbai"
+URL_TO_NETWORK["https://arbiscan.io"]="arbitrum"
+URL_TO_NETWORK["https://testnet.arbiscan.io"]="arbitrum-testnet"
+URL_TO_NETWORK["https://snowtrace.io"]="avalanche"
+URL_TO_NETWORK["https://testnet.snowtrace.io"]="avalanche-fuji"
+URL_TO_NETWORK["https://cronoscan.com"]="cronos"
+URL_TO_NETWORK["https://moonbeam.moonscan.io"]="moonbeam"
+URL_TO_NETWORK["https://aurorascan.dev"]="aurora"
 
 NETWORK_TO_KEY["mainnet"]=$ETHERSCAN_KEY
 NETWORK_TO_KEY["ropsten"]=$ETHERSCAN_KEY

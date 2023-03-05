@@ -1,10 +1,10 @@
 # turbopoc
 
-A multichain smart contract POC template generation from the command line. This is more advanced, yet more complicated fork of great `zobront/quickpoc` tool.
+Turbocharged multichain smart contract POC template generation from the command line. This is more advanced, yet more complicated fork of great `zobront/quickpoc` tool.
 
 ## features
 
-from the command line, call `turbopoc [OPTIONS]... [CONTRACT-ADDRESSES]...` to generate a ready-to-go sandbox for running POCs for the given address against multiple EVM chains, including:
+from the command line, call `turbopoc [OPTIONS]... [CONTRACT-ADDRESS][:CHAIN]...` to generate a ready-to-go sandbox for running POCs for the given address against multiple EVM chains, including:
 
 - forge template with name mirroring contract name
 - `src/` folder populated with all contracts and libraries
@@ -44,10 +44,13 @@ Macs ship with bash v3.2 due to licensing. It was released in 2007 and lacks man
 
 This does not break anything on existing installations, as brew installs bash in user space, and /bin/bash is still default option.
 
+## TODO
+- fix issue with multiple contract having the same name
+
 ## future
 
 - [x] support non-mainnet networks
 - [x] allow inputting multiple addresses
-- [ ] automatically pull all contracts listed on an immunefi page
+- [x] automatically pull all contracts listed on an immunefi page
 
 please submit issues for any additional features you'd like to see :)

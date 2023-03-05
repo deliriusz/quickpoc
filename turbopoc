@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# set -x
+
 #===== VARIABLES ======
 
 ZERO_ADDRESS=0x0000000000000000000000000000000000000000
@@ -10,6 +12,7 @@ printHelp () {
    echo "Options:"
    echo -e "-n, --network \t\t network name supported by cast. Default: mainnet"
    echo -e "-u, --rpc-url \t\t simulation RPC URL"
+   echo -e "-s, --scrap \t\t webpage to scrap block explorer contract addresses from"
    echo -e "-c, --config \t\t API keys config file. Default: ./conf"
    echo -e "-k, --key \t\t block explorer API key. Default: etherscan API key"
    echo -e "-o, --output \t\t output folder. Default: out"
@@ -34,7 +37,13 @@ checkCommandExists () {
 downloadSmartContract () {
    contract_address=$1
 
-   name=$(curl -s --location --request GET "${NETWORK_TO_URL[$NETWORK]}?module=contract&action=getsourcecode&address=${contract_address}&apikey=${BLOCK_EXPLORER_API_KEY}" | jq -r '.result'[0].ContractName)
+   name=$(curl -s --location --request GET "${NETWORK_TO_URL[$CURRENT_NETWORK]}?module=contract&action=getsourcecode&address=${contract_address}&apikey=${BLOCK_EXPLORER_API_KEY}" | jq -r '.result'[0].ContractName)
+
+   if [ -z $name ]; then
+      echo "Unable read contract $contract_address name. Probably smart contract source is not verified. Skipping..."
+      cd ..
+      return 1
+   fi
 
    if [ -z $2 ]; then
       folder=$name
@@ -53,7 +62,7 @@ downloadSmartContract () {
    rm -rf src
    rm test/Counter.t.sol
 
-   cast etherscan-source -c $NETWORK -d src --etherscan-api-key $BLOCK_EXPLORER_API_KEY $contract_address
+   cast etherscan-source -c $CURRENT_NETWORK -d src --etherscan-api-key $BLOCK_EXPLORER_API_KEY $contract_address
 
    forge remappings > remappings.txt
    for library in $(ls src/${name})
@@ -98,6 +107,20 @@ EOF
    cd ..
 }
 
+# scraps addresses and chains from website and adds them to POSITIONAL_ARGS
+# param 1 website URL
+function scrapWebsiteContracts () {
+   echo "Scrapping $1"
+   echo ${URL_TO_NETWORK["https://etherscan.io"]}
+
+   for URL in $(curl "$1" | grep -oP 'https://[a-z]*?scan.*?/address/0x[a-zA-Z0-9]+' | sort -u); do
+      HOST=$(echo "$URL" | grep -oP 'https://[a-z]*scan[.a-z0-9]+')
+      ADDRESS=$(echo "$URL" | grep -oP '0x[a-zA-Z0-9]+')
+      CHAIN=${URL_TO_NETWORK["$HOST"]}
+      POSITIONAL_ARGS+=("$ADDRESS:$CHAIN") # add address as positional arg
+   done
+}
+
 # has to be called after all config is resolved
 # it's assumed that it's called after `downloadSmartContract` function and "name" is set
 function graphSmartContract () {
@@ -107,11 +130,11 @@ function graphSmartContract () {
    LIST=$(find src -type f -name '*.sol') # glob expansion doesn't work here in Linux for some reason
    surya graph $LIST | dot -Tpng > assets/${name}-flow-graph.png
 
-   if [ -z "${NETWORK_TO_SOL2UML[$NETWORK]}" ]; then
-      echo "Sol2UML is not supported for $NETWORK. Storage layout and class diagram won't be created"
+   if [ -z "${NETWORK_TO_SOL2UML[$CURRENT_NETWORK]}" ]; then
+      echo "Sol2UML is not supported for $CURRENT_NETWORK. Storage layout and class diagram won't be created"
    else
-      sol2uml class -n ${NETWORK_TO_SOL2UML[$NETWORK]} -k $BLOCK_EXPLORER_API_KEY -o assets/${name}-UML.svg $contract_address
-      sol2uml storage -n ${NETWORK_TO_SOL2UML[$NETWORK]} -k $BLOCK_EXPLORER_API_KEY -o assets/${name}-storage.svg $contract_address
+      sol2uml class -n ${NETWORK_TO_SOL2UML[$CURRENT_NETWORK]} -k $BLOCK_EXPLORER_API_KEY -o assets/${name}-UML.svg $contract_address
+      sol2uml storage -n ${NETWORK_TO_SOL2UML[$CURRENT_NETWORK]} -k $BLOCK_EXPLORER_API_KEY -o assets/${name}-storage.svg $contract_address
    fi
 
    git add . > /dev/null > /dev/null
@@ -120,12 +143,30 @@ function graphSmartContract () {
    cd ..
 }
 
+function checkSetRpc () {
+   BLOCK_EXPLORER_API_KEY=${NETWORK_TO_KEY[$CURRENT_NETWORK]}
+
+   if [ -z "$BLOCK_EXPLORER_API_KEY" ]; then
+      echo "Unknown network passed. Please refer to cast documentation for a list of supported chains."
+      exit 1
+   fi
+
+   if [ -z "$RPC_URL" ]; then
+      if [ -z "${NETWORK_TO_RPC_URL[$CURRENT_NETWORK]}" ]; then
+         echo -e "\nWarning. You don't have $CURRENT_NETWORK RPC URL specified in $CONFIG_FILE nor input parameter. It will be set to empty in a POC test file. Please add it manually later\n"
+      else
+         RPC_URL="${NETWORK_TO_RPC_URL[$CURRENT_NETWORK]}" 
+      fi
+   fi
+}
+
 # ====== CHECKS ======
 
 checkCommandExists jq
 checkCommandExists forge
 checkCommandExists cast
 checkCommandExists curl
+checkCommandExists grep
 checkCommandExists surya
 checkCommandExists dot
 checkCommandExists sol2uml
@@ -151,6 +192,11 @@ while [[ $# -gt 0 ]]; do
       ;;
     -u|--rpc-url)
       RPC_URL="$2"
+      shift # past argument
+      shift # past value
+      ;;
+    -s|--scrap)
+      SCRAP_URL="$2" 
       shift # past argument
       shift # past value
       ;;
@@ -184,29 +230,15 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
+CURRENT_NETWORK="$NETWORK"
 
 source $CONFIG_FILE # load user config
 
-# ===== CHECKS =====
-
-if [ -z "$BLOCK_EXPLORER_API_KEY" ]; then
-   BLOCK_EXPLORER_API_KEY=${NETWORK_TO_KEY[$NETWORK]}
-
-   if [ -z "$BLOCK_EXPLORER_API_KEY" ]; then
-      echo "Unknown network passed. Please refer to cast documentation for a list of supported chains."
-      exit 1
-   fi
+if [ -n "$SCRAP_URL" ]; then
+       scrapWebsiteContracts "$SCRAP_URL"
 fi
 
-if [ -z "$RPC_URL" ]; then
-   if [ -z "${NETWORK_TO_RPC_URL[$NETWORK]}" ]; then
-      echo -e "\nWarning. You don't have $NETWORK RPC URL specified in $CONFIG_FILE nor input parameter. It will be set to empty in a POC test file. Please add it manually later\n"
-   else
-      RPC_URL="${NETWORK_TO_RPC_URL[$NETWORK]}" 
-   fi
-fi
-
+set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
 
 # ===== ITERATE OVER PARAMS =====
 
@@ -219,32 +251,47 @@ do
       echo "Unexpected param. Expected contract address (0x...)"
       exit 1
    fi
+
    echo "Working on $CONTRACT"
+
+   if grep -q ":" <<< "$CONTRACT"; then
+      CURRENT_NETWORK=$(echo $CONTRACT | cut -d: -f2)
+      CONTRACT_ADDRESS=$(echo $CONTRACT | cut -d: -f1)
+   else
+      CURRENT_NETWORK="$NETWORK"
+      CONTRACT_ADDRESS="$CONTRACT"
+   fi
+
+   checkSetRpc
 
    # For some chains like BSC, it's possible that cast will, for some reason, return false results.
    # Passing a reliable RPC_URL (if one exists in config) solves this problem.
    [[ ! -z "$RPC_URL" ]] && CAST_RPC_OVERRIDE="--rpc-url $RPC_URL" 
 
-   proxy_storage_value=$(cast storage --chain $NETWORK -e ${NETWORK_TO_KEY[$NETWORK]} $CAST_RPC_OVERRIDE $CONTRACT 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc)
+   proxy_storage_value=$(cast storage --chain $CURRENT_NETWORK -e ${NETWORK_TO_KEY[$CURRENT_NETWORK]} $CAST_RPC_OVERRIDE $CONTRACT_ADDRESS 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc)
    proxy_impl=$(cast --abi-decode "sig()(address)" $proxy_storage_value)
 
    if [ $proxy_impl == $ZERO_ADDRESS ] ; then
-      logic_contract=$CONTRACT
-      data_contract=$CONTRACT
+      logic_contract=$CONTRACT_ADDRESS
+      data_contract=$CONTRACT_ADDRESS
    else
       logic_contract=$proxy_impl
-      data_contract=$CONTRACT
+      data_contract=$CONTRACT_ADDRESS
    fi
 
-   name=$(curl -s --location --request GET "${NETWORK_TO_URL[$NETWORK]}?module=contract&action=getsourcecode&address=${logic_contract}&apikey=${BLOCK_EXPLORER_API_KEY}" | jq -r '.result'[0].ContractName)
+   name=$(curl -s --location --request GET "${NETWORK_TO_URL[$CURRENT_NETWORK]}?module=contract&action=getsourcecode&address=${logic_contract}&apikey=${BLOCK_EXPLORER_API_KEY}" | jq -r '.result'[0].ContractName)
 
    downloadSmartContract $logic_contract $name
-   graphSmartContract
 
-   if [ $logic_contract != $data_contract ]; then # if it's proxy contract, get it's code as well
-      name="$name-proxy"
-      downloadSmartContract $data_contract $name
+   # check if smart contract download finished with success
+   if [[ $? -eq 0 ]]; then
       graphSmartContract
+
+      if [ $logic_contract != $data_contract ]; then # if it's proxy contract, get it's code as well
+         name="$name-proxy"
+         downloadSmartContract $data_contract $name
+         graphSmartContract
+      fi
    fi
 done
 
