@@ -281,14 +281,14 @@ do
 
    name=$(curl -s --location --request GET "${NETWORK_TO_URL[$CURRENT_NETWORK]}?module=contract&action=getsourcecode&address=${logic_contract}&apikey=${BLOCK_EXPLORER_API_KEY}" | jq -r '.result'[0].ContractName)
 
-   downloadSmartContract $logic_contract $name
+   downloadSmartContract $logic_contract "$name-$CURRENT_NETWORK"
 
    # check if smart contract download finished with success
    if [[ $? -eq 0 ]]; then
       graphSmartContract
 
       if [ $logic_contract != $data_contract ]; then # if it's proxy contract, get it's code as well
-         name="$name-proxy"
+         name="$name-proxy-$CURRENT_NETWORK"
          downloadSmartContract $data_contract $name
          graphSmartContract
       fi
