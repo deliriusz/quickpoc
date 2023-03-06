@@ -5,6 +5,7 @@
 #===== VARIABLES ======
 
 ZERO_ADDRESS=0x0000000000000000000000000000000000000000
+FAILED_SMART_CONTRACTS=()
 
 # ===== FUNCTIONS ======
 
@@ -292,9 +293,15 @@ do
          downloadSmartContract $data_contract $name
          graphSmartContract
       fi
+   else
+      FAILED_SMART_CONTRACTS+=("$CONTRACT") # save positional arg
    fi
 done
 
+if [[ ${#FAILED_SMART_CONTRACTS[@]} -gt 0 ]]; then
+   echo "Some smart contracts failed during downloading. They can be retried by using following command:"
+   echo "$0 ${FAILED_SMART_CONTRACTS[@]}"
+fi
 
 # ===== COPY NAME =====
 
