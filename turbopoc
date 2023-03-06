@@ -54,7 +54,7 @@ downloadSmartContract () {
 
    if [ -d ${folder} ]; then
       echo "error: already folder named $name - enter a custom name as a second arg"
-      exit 1
+      return 1
    fi
 
    forge init $folder --no-commit
