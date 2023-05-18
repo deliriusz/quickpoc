@@ -2,9 +2,9 @@
 
 Turbocharged multichain smart contract POC template generation from the command line. This is more advanced, yet more complicated fork of great `zobront/quickpoc` tool.
 
-## features
+## usage
 
-from the command line, call `turbopoc [OPTIONS]... [CONTRACT-ADDRESS][:CHAIN]...` to generate a ready-to-go sandbox for running POCs for the given address against multiple EVM chains, including:
+From the command line, call `turbopoc [OPTIONS]... [CONTRACT-ADDRESS][:CHAIN]...`, or `turbopoc [OPTIONS]... -s https://page.to.scrap.block-explorers-addresses-from.io` to generate a ready-to-go sandbox for running POCs for the given address against multiple EVM chains, including:
 
 - forge template with name mirroring contract name
 - `src/` folder populated with all contracts and libraries
@@ -37,6 +37,11 @@ you can run `forge test` to confirm it's working, then go into `tests/POC.t.sol`
 - call `chmod +x path_to_file` to make the file executable
 - you should then be able to call `turbopoc` from any folder to generate the POC folder within it.
 
+## features
+- support for all common EVM networks
+- automatically pull all contracts listed on an immunefi (or any other) page
+- automatic test generation
+
 ## troubleshooting
 ### unknown option: -A
 Macs ship with bash v3.2 due to licensing. It was released in 2007 and lacks many modern features. This tool requires associative arrays that were introduced in v4.0. In order to fix this issue, please install most recent bash version:
@@ -47,11 +52,5 @@ This does not break anything on existing installations, as brew installs bash in
 ## TODO
 - fix issue with multiple contract having the same name
 - perform best-effort merging related code into one project (depends on previous one)
-
-## future
-
-- [x] support non-mainnet networks
-- [x] allow inputting multiple addresses
-- [x] automatically pull all contracts listed on an immunefi page
 
 please submit issues for any additional features you'd like to see :)
