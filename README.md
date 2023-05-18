@@ -46,6 +46,7 @@ This does not break anything on existing installations, as brew installs bash in
 
 ## TODO
 - fix issue with multiple contract having the same name
+- perform best-effort merging related code into one project (depends on previous one)
 
 ## future
 
