@@ -63,6 +63,11 @@ downloadSmartContract () {
 
    cast etherscan-source -c $CURRENT_NETWORK -d src --etherscan-api-key $BLOCK_EXPLORER_API_KEY $contract_address
 
+   for HIDDEN in $(find src -iname '.*') # find all folders starting with dot
+   do
+      mv $HIDDEN $(echo "$HIDDEN" | tr '.' '_') # translate them to _ - underscore
+   done
+
    forge remappings > remappings.txt
    for library in $(ls src/${name})
    do
