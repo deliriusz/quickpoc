@@ -306,6 +306,7 @@ if [[ ${#FAILED_SMART_CONTRACTS[@]} -gt 0 ]]; then
    echo "$0 ${FAILED_SMART_CONTRACTS[@]}"
 fi
 
-# ===== COPY NAME =====
-
-echo "cd ${name}" | pbcopy 
+# ===== COPY NAME TO CLIPBOARD =====
+if command -v pbcopy > /dev/null ; then
+   echo "cd ${name}" | pbcopy 
+fi
