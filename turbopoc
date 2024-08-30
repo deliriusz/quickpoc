@@ -98,9 +98,13 @@ EOF
 contract ${name}POC is Test {
    ${name} c = ${name}($data_contract);
 
-   function test${name}POC() public {
+   function setUp() public {
       vm.createSelectFork('${RPC_URL}');
+   }
+
+   function testPOCSetup() public {
       assert(address(c) == $data_contract);
+      assert(address(c).code.length > 0);
    }
 }
 EOF
