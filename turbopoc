@@ -190,6 +190,9 @@ while [[ $# -gt 0 ]]; do
   case $1 in
     -n|--network)
       NETWORK="$2"
+      if [[ "$NETWORK" == "ethereum" ]]; then
+          NETWORK="mainnet"
+      fi
       shift # past argument
       shift # past value
       ;;
